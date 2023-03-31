@@ -26,11 +26,11 @@ BADGES = {
     "gold": {"threshold": 200, "name": "🥇 Gold", "description": "Reduce 200 kg CO2e"},
 }
 
-updater = Updater(API_TOKEN, use_context=True)
+updater = Updater(API_TOKEN)
 
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
-def start(update: Update, context: CallbackContext):
+def start(update: Update, context):
     user = update.effective_user
     context.user_data.setdefault('footprint', 0)
     context.user_data.setdefault('history', [])
@@ -49,7 +49,7 @@ def start(update: Update, context: CallbackContext):
     update.message.reply_text(text, reply_markup=reply_markup)
 
 
-def help_command(update: Update, context: CallbackContext):
+def help_command(update: Update, context):
     help_text = "To use this bot, simply select your transportation mode and follow the instructions provided."
     help_text += " You can also use the following commands:\n"
     help_text += "/start - Start the bot and select transportation mode.\n"
@@ -80,7 +80,7 @@ def format_statistics(user_data, time_period=None):
     text += f"{'Total':<17}{total_emission:.2f}"
     return text
 
-def statistics(update: Update, context: CallbackContext):
+def statistics(update: Update, context):
     time_period = None
     if 'period' in context.user_data:
         time_period = context.user_data['period']
@@ -116,7 +116,7 @@ def update_achievements(user_data):
 
     return badge_message
 
-def achievements(update: Update, context: CallbackContext):
+def achievements(update: Update, context):
     achievements = context.user_data.get("achievements", [])
     if not achievements:
         update.message.reply_text("You haven't earned any badges yet. Keep reducing your carbon footprint to unlock achievements!")
@@ -131,7 +131,7 @@ def achievements(update: Update, context: CallbackContext):
 
 dispatcher.add_handler(CommandHandler("achievements", achievements))
 
-def share(update: Update, context: CallbackContext):
+def share(update: Update, context):
     user = update.effective_user
     achievements = context.user_data.get("achievements", [])
     if not achievements:
@@ -148,7 +148,7 @@ def share(update: Update, context: CallbackContext):
 
 dispatcher.add_handler(CommandHandler("share", share))
     
-def reset(update: Update, context: CallbackContext):
+def reset(update: Update, context):
     context.user_data['footprint'] = 0
     context.user_data['history'] = []
     update.message.reply_text("Your carbon footprint data has been reset.")
