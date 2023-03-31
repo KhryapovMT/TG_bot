@@ -1,6 +1,5 @@
 import logging
 import datetime
-import time
 import telepot
 from telepot.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
