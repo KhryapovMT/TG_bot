@@ -1,14 +1,17 @@
 import logging
 import datetime
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
+import asyncio
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.filters import Text
+from aiogram.dispatcher.filters.state import State, StatesGroup
 
-# Set up the logging
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-API_TOKEN = '6146264911:AAEUYFWgDYQNcjfYvk03kj0B2yTAJ__P890'
+API_TOKEN = 'YOUR_API_TOKEN'
 
 EMISSION_FACTORS = {
     "car": 0.23,
@@ -23,36 +26,46 @@ BADGES = {
     "gold": {"threshold": 200, "name": "🥇 Gold", "description": "Reduce 200 kg CO2e"},
 }
 
-def start(update, context):
-    user = update.effective_user
-    context.user_data.setdefault('footprint', 0)
-    context.user_data.setdefault('history', [])
-    
+
+class Form(StatesGroup):
+    mode = State()
+    distance = State()
+
+
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher(bot)
+
+
+async def start(message: types.Message):
+    user = message.from_user
+    async with FSMContext(message.chat.id) as state:
+        await state.finish()
+
     text = f"Hello {user.first_name}! Welcome to the Carbon Footprint Calculator bot. 🌍\n"
     text += "To calculate your carbon footprint, please select your transportation mode below:\n"
-    
+
     keyboard = [
         [InlineKeyboardButton("Car 🚗", callback_data="car"),
          InlineKeyboardButton("Public Transport 🚌", callback_data="public_transport"),
          InlineKeyboardButton("Bicycle 🚲", callback_data="bicycle"),
          InlineKeyboardButton("Walking 🚶‍♂️", callback_data="walking")]
     ]
-    
+
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text(text, reply_markup=reply_markup)
+    await message.reply(text, reply_markup=reply_markup)
 
 
-def help_command(update, context):
+async def help_command(message: types.Message):
     help_text = "To use this bot, simply select your transportation mode and follow the instructions provided."
     help_text += " You can also use the following commands:\n"
     help_text += "/start - Start the bot and select transportation mode.\n"
     help_text += "/help - Show help information.\n"
     help_text += "/statistics - Show your carbon footprint statistics.\n"
     help_text += "/reset - Reset your carbon footprint data."
-    update.message.reply_text(help_text)
+    await message.reply(help_text)
 
 
-def format_statistics(user_data, time_period=None):
+async def format_statistics(user_data, time_period=None):
     if time_period is not None:
         start_date = datetime.date.today() - datetime.timedelta(days=time_period)
         history = [entry for entry in user_data['history'] if datetime.date.fromisoformat(entry['date']) >= start_date]
@@ -63,22 +76,28 @@ def format_statistics(user_data, time_period=None):
     mode_emissions = {mode: 0 for mode in EMISSION_FACTORS.keys()}
     for entry in history:
         mode_emissions[entry['mode']] += entry['emission']
-    
+
     text = "Carbon Footprint Statistics:\n"
     text += f"{'Mode':<17}{'Emission (kg CO2e)'}\n"
+
     for mode, emission in mode_emissions.items():
         text += f"{mode.capitalize():<17}{emission:.2f}\n"
     text += f"{'Total':<17}{total_emission:.2f}"
-def statistics(update, context):
+
+    return text
+
+
+async def statistics(message: types.Message):
     time_period = None
-    if 'period' in context.user_data:
-        time_period = context.user_data['period']
-    
-    text = format_statistics(context.user_data, time_period)
-    update.message.reply_text(text)
+    async with bot.data_proxy() as user_data:
+        if 'period' in user_data:
+            time_period = user_data['period']
+
+        text = await format_statistics(user_data, time_period)
+        await message.reply(text)
 
 
-def store_transportation_data(user_data, mode, distance):
+async def store_transportation_data(user_data, mode, distance):
     emission = distance * EMISSION_FACTORS[mode]
     user_data['footprint'] += emission
     user_data['history'].append({
@@ -89,7 +108,7 @@ def store_transportation_data(user_data, mode, distance):
     })
 
 
-def update_achievements(user_data):
+async def update_achievements(user_data):
     footprint = user_data['footprint']
     achievements = user_data.get('achievements', [])
 
@@ -106,58 +125,90 @@ def update_achievements(user_data):
     return badge_message
 
 
-def achievements(update, context):
-    achievements = context.user_data.get("achievements", [])
-    if not achievements:
-        update.message.reply_text("You haven't earned any badges yet. Keep reducing your carbon footprint to unlock achievements!")
-        return
+async def achievements(message: types.Message):
+    async with bot.data_proxy() as user_data:
+        achievements = user_data.get("achievements", [])
+        if not achievements:
+            await message.reply_text("You haven't earned any badges yet. Keep reducing your carbon footprint to unlock achievements!")
+            return
 
-    text = "🏆 Your Achievements:\n\n"
-    for badge_id in achievements:
-        badge = BADGES[badge_id]
-        text += f"{badge['name']} - {badge['description']}\n"
-    
-    update.message.reply_text(text)
+        text = "🏆 Your Achievements:\n\n"
+        for badge_id in achievements:
+            badge = BADGES[badge_id]
+            text += f"{badge['name']} - {badge['description']}\n"
 
-
-def share(update, context):
-    user = update.effective_user
-    achievements = context.user_data.get("achievements", [])
-    if not achievements:
-        update.message.reply_text("You don't have any achievements to share yet.")
-        return
-
-    text = f"{user.first_name} has been using the Carbon Footprint Calculator bot and has earned the following achievements:\n\n"
-    for badge_id in achievements:
-        badge = BADGES[badge_id]
-        text += f"{badge['name']} - {badge['description']}\n"
-    
-    text += "\nJoin the carbon footprint reduction journey using the Carbon Footprint Calculator bot: https://t.me/Habitr_bot"
-    update.message.reply_text(text)
+        await message.reply(text)
 
 
-def reset(update, context):
-    context.user_data['footprint'] = 0
-    context.user_data['history'] = []
-    update.message.reply_text("Your carbon footprint data has been reset.")
+async def share(message: types.Message):
+    user = message.from_user
+    async with bot.data_proxy() as user_data:
+        achievements = user_data.get("achievements", [])
+        if not achievements:
+            await message.reply_text("You don't have any achievements to share yet.")
+            return
+
+        text = f"{user.first_name} has been using the Carbon Footprint Calculator bot and has earned the following achievements:\n\n"
+        for badge_id in achievements:
+            badge = BADGES[badge_id]
+            text += f"{badge['name']} - {badge['description']}\n"
+
+        text += "\nJoin the carbon footprint reduction journey using the Carbon Footprint Calculator bot: https://t.me/Habitr_bot"
+        await message.reply(text)
 
 
-def start_polling():
-    updater = Updater(API_TOKEN, use_context=True)
-    dp = updater.dispatcher
+async def reset(message: types.Message):
+    async with bot.data_proxy() as user_data:
+        user_data['footprint'] = 0
+        user_data['history'] = []
+    await message.reply_text("Your carbon footprint data has been reset.")
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
-    dp.add_handler(CommandHandler("statistics", statistics))
-    dp.add_handler(CommandHandler("achievements", achievements))
-    dp.add_handler(CommandHandler("share", share))
-    dp.add_handler(CommandHandler("reset", reset))
-    dp.add_handler(CallbackQueryHandler(mode_callback))
-    dp.add_handler(MessageHandler(Filters.text, distance_callback))
 
-    updater.start_polling()
-    updater.idle()
+async def mode_callback(query: CallbackQuery):
+    mode = query.data
+    async with FSMContext(user_id=query.from_user.id, chat_id=query.message.chat.id) as state:
+        await state.update_data(mode=mode)
+        await Form.distance.set()
+        await query.answer()
+        await query.message.reply("Enter the distance in km:", reply_markup=types.ReplyKeyboardRemove())
+
+
+async def distance_callback(message: types.Message, state: FSMContext):
+    distance = float(message.text)
+    async with state.proxy() as data:
+        mode = data['mode']
+    await store_transportation_data
+
+async def distance_callback(message: types.Message, state: FSMContext):
+    distance = float(message.text)
+    async with state.proxy() as data:
+        mode = data['mode']
+    async with bot.data_proxy() as user_data:
+        await store_transportation_data(user_data, mode, distance)
+        await state.finish()
+        badge_message = await update_achievements(user_data)
+        if badge_message:
+            await message.answer(badge_message)
+        await message.answer("Thank you for your submission! Your carbon footprint has been updated.")
 
 
 if __name__ == '__main__':
-    start_polling()
+    # Commands
+    dp.register_message_handler(start, commands=['start'])
+    dp.register_message_handler(help_command, commands=['help'])
+    dp.register_message_handler(statistics, commands=['statistics'])
+    dp.register_message_handler(achievements, commands=['achievements'])
+    dp.register_message_handler(share, commands=['share'])
+    dp.register_message_handler(reset, commands=['reset'])
+
+    # Callbacks
+    dp.register_callback_query_handler(mode_callback, lambda query: query.data in EMISSION_FACTORS.keys())
+    dp.register_message_handler(distance_callback, state=Form.distance)
+
+    # Start the bot
+    loop = asyncio.get_event_loop()
+    loop.create_task(dp.start_polling())
+    try:
+        loop.run_forever()
+    finally:
+        loop.stop()
