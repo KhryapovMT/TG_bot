@@ -191,7 +191,6 @@ async def distance_callback(message: types.Message, state: FSMContext):
             await message.answer(badge_message)
         await message.answer("Thank you for your submission! Your carbon footprint has been updated.")
 
-
 if __name__ == '__main__':
     # Commands
     dp.register_message_handler(start, commands=['start'])
