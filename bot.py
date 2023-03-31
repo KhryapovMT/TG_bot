@@ -1,7 +1,6 @@
 import os
 import logging
-from telegram import Updater, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import CommandHandler, CallbackQueryHandler, MessageHandler
+from telegram.ext import Updater, InlineKeyboardMarkup, InlineKeyboardButton, CommandHandler, CallbackQueryHandler, MessageHandler
 import requests
 import json
 import datetime
