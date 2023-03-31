@@ -1,7 +1,7 @@
 import os
 import logging
 from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler
 import requests
 import json
 import datetime
@@ -26,7 +26,7 @@ BADGES = {
     "gold": {"threshold": 200, "name": "🥇 Gold", "description": "Reduce 200 kg CO2e"},
 }
 
-updater = Updater(API_TOKEN)
+updater = Updater(API_TOKEN, use_context=True)
 
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
