@@ -1,9 +1,7 @@
-import os
 import logging
-from telegram.ext import Updater, InlineKeyboardMarkup, InlineKeyboardButton, CommandHandler, CallbackQueryHandler, MessageHandler
-import requests
-import json
 import datetime
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 
 # Set up the logging
 logging.basicConfig(level=logging.INFO,
@@ -25,12 +23,7 @@ BADGES = {
     "gold": {"threshold": 200, "name": "🥇 Gold", "description": "Reduce 200 kg CO2e"},
 }
 
-updater = Updater(API_TOKEN, use_context=True)
-
-dispatcher = updater.dispatcher
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CommandHandler("help", help_command))
-def start(update: Update, context):
+def start(update, context):
     user = update.effective_user
     context.user_data.setdefault('footprint', 0)
     context.user_data.setdefault('history', [])
@@ -49,7 +42,7 @@ def start(update: Update, context):
     update.message.reply_text(text, reply_markup=reply_markup)
 
 
-def help_command(update: Update, context):
+def help_command(update, context):
     help_text = "To use this bot, simply select your transportation mode and follow the instructions provided."
     help_text += " You can also use the following commands:\n"
     help_text += "/start - Start the bot and select transportation mode.\n"
@@ -58,8 +51,6 @@ def help_command(update: Update, context):
     help_text += "/reset - Reset your carbon footprint data."
     update.message.reply_text(help_text)
 
-dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(CommandHandler("help", help_command))
 
 def format_statistics(user_data, time_period=None):
     if time_period is not None:
@@ -78,9 +69,7 @@ def format_statistics(user_data, time_period=None):
     for mode, emission in mode_emissions.items():
         text += f"{mode.capitalize():<17}{emission:.2f}\n"
     text += f"{'Total':<17}{total_emission:.2f}"
-    return text
-
-def statistics(update: Update, context):
+def statistics(update, context):
     time_period = None
     if 'period' in context.user_data:
         time_period = context.user_data['period']
@@ -88,7 +77,6 @@ def statistics(update: Update, context):
     text = format_statistics(context.user_data, time_period)
     update.message.reply_text(text)
 
-dispatcher.add_handler(CommandHandler("statistics", statistics))
 
 def store_transportation_data(user_data, mode, distance):
     emission = distance * EMISSION_FACTORS[mode]
@@ -99,6 +87,7 @@ def store_transportation_data(user_data, mode, distance):
         'emission': emission,
         'date': datetime.date.today().isoformat()
     })
+
 
 def update_achievements(user_data):
     footprint = user_data['footprint']
@@ -116,7 +105,8 @@ def update_achievements(user_data):
 
     return badge_message
 
-def achievements(update: Update, context):
+
+def achievements(update, context):
     achievements = context.user_data.get("achievements", [])
     if not achievements:
         update.message.reply_text("You haven't earned any badges yet. Keep reducing your carbon footprint to unlock achievements!")
@@ -129,9 +119,8 @@ def achievements(update: Update, context):
     
     update.message.reply_text(text)
 
-dispatcher.add_handler(CommandHandler("achievements", achievements))
 
-def share(update: Update, context):
+def share(update, context):
     user = update.effective_user
     achievements = context.user_data.get("achievements", [])
     if not achievements:
@@ -144,29 +133,31 @@ def share(update: Update, context):
         text += f"{badge['name']} - {badge['description']}\n"
     
     text += "\nJoin the carbon footprint reduction journey using the Carbon Footprint Calculator bot: https://t.me/Habitr_bot"
-    update.message.reply_text(text)  # This line was missing
+    update.message.reply_text(text)
 
-dispatcher.add_handler(CommandHandler("share", share))
-    
-def reset(update: Update, context):
+
+def reset(update, context):
     context.user_data['footprint'] = 0
     context.user_data['history'] = []
     update.message.reply_text("Your carbon footprint data has been reset.")
 
-dispatcher.add_handler(CommandHandler("reset", reset))
-def main():
-    # Start the bot
-    updater.start_polling()
-    print("Carbon Footprint Calculator bot is running...")
 
-    # Run the bot until the user presses Ctrl+C or the process receives SIGINT, SIGTERM, or SIGABRT
+def start_polling():
+    updater = Updater(API_TOKEN, use_context=True)
+    dp = updater.dispatcher
+
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("help", help_command))
+    dp.add_handler(CommandHandler("statistics", statistics))
+    dp.add_handler(CommandHandler("achievements", achievements))
+    dp.add_handler(CommandHandler("share", share))
+    dp.add_handler(CommandHandler("reset", reset))
+    dp.add_handler(CallbackQueryHandler(mode_callback))
+    dp.add_handler(MessageHandler(Filters.text, distance_callback))
+
+    updater.start_polling()
     updater.idle()
-    print("Carbon Footprint Calculator bot has been stopped.")
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        updater.stop()
-        print("\nCarbon Footprint Calculator bot has been stopped.")
+    start_polling()
