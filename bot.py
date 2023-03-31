@@ -80,7 +80,6 @@ def format_statistics(user_data, time_period=None):
     text += f"{'Total':<17}{total_emission:.2f}"
     return text
 
-
 def statistics(update: Update, context: CallbackContext):
     time_period = None
     if 'period' in context.user_data:
@@ -91,16 +90,31 @@ def statistics(update: Update, context: CallbackContext):
 
 dispatcher.add_handler(CommandHandler("statistics", statistics))
 
-def store_transportation_data(update: Update, context: CallbackContext):
-    # ... (the existing code in the function) ...
+def store_transportation_data(user_data, mode, distance):
+    emission = distance * EMISSION_FACTORS[mode]
+    user_data['footprint'] += emission
+    user_data['history'].append({
+        'mode': mode,
+        'distance': distance,
+        'emission': emission,
+        'date': datetime.date.today().isoformat()
+    })
 
-    # Call the update_achievements function and get the badge message
-    badge_message = update_achievements(context.user_data)
-    
+def update_achievements(user_data):
+    footprint = user_data['footprint']
+    achievements = user_data.get('achievements', [])
+
+    badge_message = ""
+
+    for badge_id, badge_info in BADGES.items():
+        if badge_id not in achievements and footprint >= badge_info['threshold']:
+            achievements.append(badge_id)
+            badge_message += f"🎉 Congratulations! You've just earned the {badge_info['name']} badge: {badge_info['description']}\n"
+
     if badge_message:
-        update.message.reply_text(badge_message)
+        user_data['achievements'] = achievements
 
-    # ... (the existing code in the function) ...
+    return badge_message
 
 def achievements(update: Update, context: CallbackContext):
     achievements = context.user_data.get("achievements", [])
@@ -129,7 +143,7 @@ def share(update: Update, context: CallbackContext):
         badge = BADGES[badge_id]
         text += f"{badge['name']} - {badge['description']}\n"
     
-    text += "\nJoin the carbon footprint reduction journey using the Carbon Footprint Calculator bot: https://t.me/your_bot_username"
+    text += "\nJoin the carbon footprint reduction journey using the Carbon Footprint Calculator bot: https://t.me/Habitr_bot"
     update.message.reply_text(text)  # This line was missing
 
 dispatcher.add_handler(CommandHandler("share", share))
