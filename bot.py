@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-API_TOKEN = os.environ.get('TELEGRAM_API_TOKEN')
+API_TOKEN = '6146264911:AAEUYFWgDYQNcjfYvk03kj0B2yTAJ__P890'
 
 EMISSION_FACTORS = {
     "car": 0.23,
