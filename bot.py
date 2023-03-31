@@ -26,8 +26,9 @@ BADGES = {
     "gold": {"threshold": 200, "name": "🥇 Gold", "description": "Reduce 200 kg CO2e"},
 }
 
-updater = Updater(API_TOKEN)
+updater = Updater(API_TOKEN, use_context=True)
 
+dispatcher = updater.dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(CommandHandler("help", help_command))
 def start(update: Update, context):
