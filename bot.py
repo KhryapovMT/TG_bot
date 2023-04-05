@@ -215,8 +215,10 @@ def main():
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except KeyboardInterrupt:
-        updater.stop()
-        print("\nCarbon Footprint Calculator bot has been stopped.")
+    # Start the bot
+    updater.start_polling()
+
+    # Run the bot until the user presses Ctrl+C or the process receives SIGINT,
+    # SIGTERM, or SIGABRT
+    updater.idle()
+
