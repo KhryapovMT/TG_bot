@@ -109,12 +109,12 @@ def statistics(update: Update, context: CallbackContext):
 dispatcher.add_handler(CommandHandler("statistics", statistics))
 
 def store_transportation_data(update: Update, context: CallbackContext):
-       badge_message = update_achievements(context.user_data)
+    badge_message = update_achievements(context.user_data)
     
     if badge_message:
         update.message.reply_text(badge_message)
         
-       points_earned = update_points(context.user_data, mode)
+    points_earned = update_points(context.user_data, mode)
     update.message.reply_text(f"You have earned {points_earned} points for choosing {mode.capitalize()}!")
 
 def achievements(update: Update, context: CallbackContext):
