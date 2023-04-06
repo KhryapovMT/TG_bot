@@ -58,7 +58,8 @@ def start(update, context):
 def help(update, context):
     help_text = f"Here are the available commands:\n{commands_text}"
     update.message.reply_text(help_text)
-    
+   
+start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
 updater.start_polling()
