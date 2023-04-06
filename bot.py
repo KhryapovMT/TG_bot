@@ -6,7 +6,7 @@ import requests
 import json
 import datetime
 
-from telegram.ext import Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, Filters
 
 # Set up the logging
@@ -40,7 +40,7 @@ updater = Updater(API_TOKEN, use_context=True)
 
 dispatcher = updater.dispatcher
 
-def transportation_mode_callback(update: Update, context: CallbackContext):
+def transportation_mode_callback(update, context):
     query = update.callback_query
     query.answer()
 
@@ -53,7 +53,7 @@ def transportation_mode_callback(update: Update, context: CallbackContext):
     return "GET_DISTANCE"
 
 
-def get_distance_message(update: Update, context: CallbackContext):
+def get_distance_message(update, context):
     try:
         distance = float(update.message.text)
     except ValueError:
@@ -83,13 +83,13 @@ def get_distance_message(update: Update, context: CallbackContext):
     return "CHOOSE_ACTION"
 
 
-def another_callback(update: Update, context: CallbackContext):
+def another_callback(update, context):
     query = update.callback_query
     query.answer()
 
     text = "Please select another mode of transportation:"
     keyboard = [
-        [InlineKeyboardButton("Car 🚗", callback_data="car"),
+                [InlineKeyboardButton("Car 🚗", callback_data="car"),
          InlineKeyboardButton("Public Transport 🚌", callback_data="public_transport"),
          InlineKeyboardButton("Bicycle 🚲", callback_data="bicycle"),
          InlineKeyboardButton("Walking 🚶‍♂️", callback_data="walking")]
@@ -120,7 +120,7 @@ def update_achievements(user_data):
 
     return None
 
-def store_transportation_data(update: Update, context: CallbackContext):
+def store_transportation_data(update, context):
     mode = context.user_data.get('mode')
     if mode is None:
         update.message.reply_text("Error: Mode not found in user data.")
@@ -133,7 +133,6 @@ def store_transportation_data(update: Update, context: CallbackContext):
 
     history_entry = context.user_data['history'][-1]
     distance = history_entry['distance']
-
 
     emission = emission_factor * distance
     context.user_data['footprint'] = context.user_data.get('footprint', 0) + emission
@@ -151,12 +150,11 @@ def store_transportation_data(update: Update, context: CallbackContext):
 
     points_earned = update_points(context.user_data, mode)
     update.message.reply_text(f"You have earned {points_earned} points for choosing {mode.capitalize()}!")
-	
+
 def update_points(user_data, mode):
     points = POINTS.get(mode, 0)
     user_data['points'] = user_data.get('points', 0) + points
     return points
-
 
 def main():
     # Start the bot
@@ -174,3 +172,4 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         updater.stop()
         logger.info("\nCarbon Footprint Calculator bot has been stopped by user.")
+
