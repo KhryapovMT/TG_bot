@@ -259,7 +259,7 @@ def main():
     dispatcher.add_handler(CommandHandler('calculate', calculate))
     dispatcher.add_handler(CommandHandler('statistics', statistics))
     dispatcher.add_handler(CommandHandler('reset', reset))
-    dispatcher.add_handler(CommandHandler('leaderboard', leaderboard)
+    dispatcher.add_handler(CommandHandler('leaderboard', leaderboard))  # Close the parentheses here
     
     # Start the bot
     updater.start_polling()
