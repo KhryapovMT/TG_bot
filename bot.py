@@ -81,16 +81,6 @@ def calculate(update, context):
 calculate_handler = CommandHandler('calculate', calculate)
 dispatcher.add_handler(calculate_handler)
 
-dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^(car|public_transport|bicycle|walking)$"))
-dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
-dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))
-  
-    
-def statistics(update, context):
-    text = format_statistics(context.user_data)
-    update.message.reply_text(text)
-
-
 def transportation_mode_callback(update, context):
     query = update.callback_query
     query.answer()
@@ -102,6 +92,15 @@ def transportation_mode_callback(update, context):
     query.edit_message_text(text)
 
     return "GET_DISTANCE"
+
+dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^(car|public_transport|bicycle|walking)$"))
+dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
+dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))
+  
+    
+def statistics(update, context):
+    text = format_statistics(context.user_data)
+    update.message.reply_text(text)
 
 def get_distance_message(update, context):
     try:
