@@ -5,26 +5,10 @@ from collections import defaultdict
 import requests
 import json
 import datetime
-import subprocess
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, Filters
 
-def update(update: Update, context: CallbackContext):
-    chat_id = update.effective_chat.id
-    context.bot.send_message(chat_id=chat_id, text="Updating bot, please wait...")
-
-    # Stop the bot
-    context.bot.send_message(chat_id=chat_id, text="Stopping bot...")
-    updater.stop()
-
-    # Execute the Git pull command
-    context.bot.send_message(chat_id=chat_id, text="Fetching updates from Git repository...")
-    subprocess.check_call(["git", "pull"])
-
-    # Restart the bot
-    context.bot.send_message(chat_id=chat_id, text="Restarting bot...")
-    os.execv(sys.executable, ['python'] + sys.argv)
 
 # Set up the logging
 logging.basicConfig(level=logging.INFO,
@@ -65,8 +49,6 @@ print("Bot is starting...")  # Debugging line
 updater.start_polling()
 print("Bot started.")  # Debugging line
 updater.idle()
-
-dispatcher.add_handler(CommandHandler("update", update))
 
 def transportation_mode_callback(update, context):
     query = update.callback_query
