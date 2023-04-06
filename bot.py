@@ -5,9 +5,26 @@ from collections import defaultdict
 import requests
 import json
 import datetime
+import subprocess
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, Filters
+
+def update(update: Update, context: CallbackContext):
+    chat_id = update.effective_chat.id
+    context.bot.send_message(chat_id=chat_id, text="Updating bot, please wait...")
+
+    # Stop the bot
+    context.bot.send_message(chat_id=chat_id, text="Stopping bot...")
+    updater.stop()
+
+    # Execute the Git pull command
+    context.bot.send_message(chat_id=chat_id, text="Fetching updates from Git repository...")
+    subprocess.check_call(["git", "pull"])
+
+    # Restart the bot
+    context.bot.send_message(chat_id=chat_id, text="Restarting bot...")
+    os.execv(sys.executable, ['python'] + sys.argv)
 
 # Set up the logging
 logging.basicConfig(level=logging.INFO,
@@ -40,6 +57,17 @@ updater = Updater(API_TOKEN, use_context=True)
 
 dispatcher = updater.dispatcher
 
+def start(update: Update, context: CallbackContext) -> None:
+    print("Start command received")  # Debugging line
+    update.message.reply_text('Hello! I am your bot. Send me a message or use my commands!')
+
+print("Bot is starting...")  # Debugging line
+updater.start_polling()
+print("Bot started.")  # Debugging line
+updater.idle()
+
+dispatcher.add_handler(CommandHandler("update", update))
+
 def transportation_mode_callback(update, context):
     query = update.callback_query
     query.answer()
@@ -51,7 +79,6 @@ def transportation_mode_callback(update, context):
     query.edit_message_text(text)
 
     return "GET_DISTANCE"
-
 
 def get_distance_message(update, context):
     try:
@@ -155,7 +182,7 @@ def update_points(user_data, mode):
     points = POINTS.get(mode, 0)
     user_data['points'] = user_data.get('points', 0) + points
     return points
-
+ 
 def main():
     # Start the bot
     updater.start_polling()
