@@ -5,6 +5,7 @@ from collections import defaultdict
 import requests
 import json
 import datetime
+import sqlite3
 
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton, Update
 from telegram.ext import Updater, CommandHandler, CallbackContext, CallbackQueryHandler, MessageHandler, Filters
@@ -41,17 +42,45 @@ updater = Updater(API_TOKEN, use_context=True)
 
 dispatcher = updater.dispatcher
 
-def start(update, context):
-    print("Start command received")  # Debugging line
-    update.message.reply_text('Hello! I am your bot. Send me a message or use my commands!')
+commands_text = """Here are the available commands:
+/start - Start the bot
+/help - Show help message
+/calculate - Calculate carbon footprint for a mode of transportation
+/statistics - Show your carbon footprint statistics
+/leaderboard - Show the leaderboard
+/reset - Reset your data
+"""
 
-start_handler = CommandHandler('start', start)
+def start(update, context):
+    start_text = f"Welcome to the Carbon Footprint Calculator bot! 🌎\nThis bot will help you calculate your carbon footprint based on your mode of transportation and distance traveled. You can use the following commands:\n{commands_text}"
+    update.message.reply_text(start_text)
+
+def help(update, context):
+    help_text = f"Here are the available commands:\n{commands_text}"
+    update.message.reply_text(help_text)
+    
 dispatcher.add_handler(start_handler)
 
-print("Bot is starting...")  # Debugging line
 updater.start_polling()
-print("Bot started.")  # Debugging line
 updater.idle()
+
+def calculate(update, context):
+    text = "Please select a mode of transportation:"
+    keyboard = [
+        [
+            InlineKeyboardButton("Car 🚗", callback_data="car"),
+            InlineKeyboardButton("Public Transport 🚌", callback_data="public_transport"),
+            InlineKeyboardButton("Bicycle 🚲", callback_data="bicycle"),
+            InlineKeyboardButton("Walking 🚶‍♂️", callback_data="walking"),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text(text, reply_markup=reply_markup)
+
+def statistics(update, context):
+    text = format_statistics(context.user_data)
+    update.message.reply_text(text)
+
 
 def transportation_mode_callback(update, context):
     query = update.callback_query
@@ -145,7 +174,12 @@ def store_transportation_data(update, context):
 
     history_entry = context.user_data['history'][-1]
     distance = history_entry['distance']
-
+    user_id = update.message.from_user.id
+    username = update.message.from_user.username
+    points = context.user_data['points']
+    footprint = context.user_data['footprint']
+    save_user_data(user_id, username, points, footprint)
+    
     emission = emission_factor * distance
     context.user_data['footprint'] = context.user_data.get('footprint', 0) + emission
     context.user_data['history'].append({
@@ -167,11 +201,66 @@ def update_points(user_data, mode):
     points = POINTS.get(mode, 0)
     user_data['points'] = user_data.get('points', 0) + points
     return points
- 
-def main():
-    start_handler = CommandHandler('start', start)
-    dispatcher.add_handler(start_handler)
+  
+def get_leaderboard_data():
+    conn = sqlite3.connect('carbon_footprint.db')
+    c = conn.cursor()
 
+    c.execute('''SELECT username, points, footprint FROM users ORDER BY points DESC, footprint ASC''')
+    leaderboard_data = c.fetchall()
+
+    conn.close()
+    return leaderboard_data
+
+def format_leaderboard(leaderboard_data):
+    text = "🏆 Leaderboard 🏆\n\n"
+    for rank, (username, points, footprint) in enumerate(leaderboard_data, start=1):
+        text += f"{rank}. {username} - {points} points, {footprint:.2f} kg CO2e\n"
+    return text
+  
+def leaderboard(update, context):
+    leaderboard_data = get_leaderboard_data()
+    text = format_leaderboard(leaderboard_data)
+    update.message.reply_text(text)
+  
+def reset(update, context):
+    context.user_data.clear()
+    update.message.reply_text("Your data has been reset.")
+ 
+def init_db():
+    conn = sqlite3.connect('carbon_footprint.db')
+    c = conn.cursor()
+
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+                    user_id INTEGER PRIMARY KEY,
+                    username TEXT,
+                    points INTEGER,
+                    footprint REAL)''')
+
+    conn.commit()
+    conn.close()
+
+def save_user_data(user_id, username, points, footprint):
+    conn = sqlite3.connect('carbon_footprint.db')
+    c = conn.cursor()
+
+    c.execute('''INSERT OR REPLACE INTO users (user_id, username, points, footprint) VALUES (?, ?, ?, ?)''',
+              (user_id, username, points, footprint))
+
+    conn.commit()
+    conn.close()
+
+
+def main():
+    init_db()
+    start_handler = CommandHandler('start', start)
+    dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(CommandHandler('help', help))
+    dispatcher.add_handler(CommandHandler('calculate', calculate))
+    dispatcher.add_handler(CommandHandler('statistics', statistics))
+    dispatcher.add_handler(CommandHandler('reset', reset))
+    dispatcher.add_handler(CommandHandler('leaderboard', leaderboard)
+    
     # Start the bot
     updater.start_polling()
     logger.info("Carbon Footprint Calculator bot is running...")
