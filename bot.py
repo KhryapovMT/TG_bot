@@ -41,9 +41,12 @@ updater = Updater(API_TOKEN, use_context=True)
 
 dispatcher = updater.dispatcher
 
-def start(update: Update, context: CallbackContext) -> None:
+def start(update, context):
     print("Start command received")  # Debugging line
     update.message.reply_text('Hello! I am your bot. Send me a message or use my commands!')
+
+start_handler = CommandHandler('start', start)
+dispatcher.add_handler(start_handler)
 
 print("Bot is starting...")  # Debugging line
 updater.start_polling()
@@ -166,6 +169,9 @@ def update_points(user_data, mode):
     return points
  
 def main():
+    start_handler = CommandHandler('start', start)
+    dispatcher.add_handler(start_handler)
+
     # Start the bot
     updater.start_polling()
     logger.info("Carbon Footprint Calculator bot is running...")
@@ -173,7 +179,6 @@ def main():
     # Run the bot until the user presses Ctrl+C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
     logger.info("Carbon Footprint Calculator bot has been stopped.")
-
 
 if __name__ == '__main__':
     try:
