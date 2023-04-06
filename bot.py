@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-API_TOKEN = '6157683300:AAGYWHBTEATMtxzcqASDPTT-rmAvLTtOP3A'
+API_TOKEN = 'your_API_token_here'
 
 EMISSION_FACTORS = {
     "car": 0.23,
@@ -58,7 +58,7 @@ def start(update, context):
 def help(update, context):
     help_text = f"Here are the available commands:\n{commands_text}"
     update.message.reply_text(help_text)
-   
+
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
@@ -78,6 +78,14 @@ def calculate(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text(text, reply_markup=reply_markup)
 
+calculate_handler = CommandHandler('calculate', calculate)
+dispatcher.add_handler(calculate_handler)
+
+dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^(car|public_transport|bicycle|walking)$"))
+dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
+dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))
+  
+    
 def statistics(update, context):
     text = format_statistics(context.user_data)
     update.message.reply_text(text)
@@ -131,7 +139,7 @@ def another_callback(update, context):
 
     text = "Please select another mode of transportation:"
     keyboard = [
-                [InlineKeyboardButton("Car 🚗", callback_data="car"),
+        [InlineKeyboardButton("Car 🚗", callback_data="car"),
          InlineKeyboardButton("Public Transport 🚌", callback_data="public_transport"),
          InlineKeyboardButton("Bicycle 🚲", callback_data="bicycle"),
          InlineKeyboardButton("Walking 🚶‍♂️", callback_data="walking")]
@@ -140,6 +148,7 @@ def another_callback(update, context):
     query.edit_message_text(text, reply_markup=reply_markup)
 
     return "CHOOSE_TRANSPORTATION_MODE"
+
 
 def update_achievements(user_data):
     achievements = user_data.get("achievements", [])
@@ -161,6 +170,7 @@ def update_achievements(user_data):
         return text
 
     return None
+
 
 def store_transportation_data(update, context):
     mode = context.user_data.get('mode')
@@ -219,52 +229,39 @@ def format_leaderboard(leaderboard_data):
         text += f"{rank}. {username} - {points} points, {footprint:.2f} kg CO2e\n"
     return text
   
-def leaderboard(update, context):
-    leaderboard_data = get_leaderboard_data()
-    text = format_leaderboard(leaderboard_data)
-    update.message.reply_text(text)
-    
-def reset(update, context):
-    context.user_data.clear()
-    update.message.reply_text("Your data has been reset.")
+def reset(update: Update, context: CallbackContext):
+    user_data = context.user_data
+    user_data.clear()
+    update.message.reply_text("All your data has been reset.")
+    return "CHOOSE_ACTION"
 
-def init_db():
-    conn = sqlite3.connect('carbon_footprint.db')
-    c = conn.cursor()
-
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
-                    user_id INTEGER PRIMARY KEY,
-                    username TEXT,
-                    points INTEGER,
-                    footprint REAL)''')
-
-    conn.commit()
-    conn.close()
+reset_handler = CommandHandler('reset', reset)
+dispatcher.add_handler(reset_handler)
 
 def save_user_data(user_id, username, points, footprint):
     conn = sqlite3.connect('carbon_footprint.db')
     c = conn.cursor()
 
-    c.execute('''INSERT OR REPLACE INTO users (user_id, username, points, footprint) VALUES (?, ?, ?, ?)''',
-              (user_id, username, points, footprint))
+    c.execute("INSERT OR REPLACE INTO users (user_id, username, points, footprint) VALUES (?, ?, ?, ?)", (user_id, username, points, footprint))
 
     conn.commit()
     conn.close()
-   
+
+    if not c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").fetchone():
+        c.execute('''CREATE TABLE IF NOT EXISTS users (
+            user_id INTEGER PRIMARY KEY,
+            username TEXT,
+            points INTEGER DEFAULT 0,
+            footprint REAL DEFAULT 0.0
+        )''')
+
+def update_points(user_data, mode):
+    points = POINTS.get(mode, 0)
+    user_data['points'] = user_data.get('points', 0) + points
+    return points
+
 
 def main():
-    init_db()
-    start_handler = CommandHandler('start', start)
-    dispatcher.add_handler(start_handler)
-    dispatcher.add_handler(CommandHandler('help', help))
-    dispatcher.add_handler(CommandHandler('calculate', calculate))
-    dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern='^(car|public_transport|bicycle|walking)$'), group=1)
-    dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), get_distance_message), group=1)
-    dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern='^another$'), group=1)
-    dispatcher.add_handler(CallbackQueryHandler(statistics, pattern='^statistics$'), group=1)
-    dispatcher.add_handler(CommandHandler('reset', reset))
-    dispatcher.add_handler(CommandHandler('leaderboard', leaderboard))
-
     # Start the bot
     updater.start_polling()
     logger.info("Carbon Footprint Calculator bot is running...")
@@ -272,6 +269,7 @@ def main():
     # Run the bot until the user presses Ctrl+C or the process receives SIGINT, SIGTERM, or SIGABRT
     updater.idle()
     logger.info("Carbon Footprint Calculator bot has been stopped.")
+
 
 if __name__ == '__main__':
     try:
