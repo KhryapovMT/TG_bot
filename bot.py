@@ -223,11 +223,11 @@ def leaderboard(update, context):
     leaderboard_data = get_leaderboard_data()
     text = format_leaderboard(leaderboard_data)
     update.message.reply_text(text)
-  
+    
 def reset(update, context):
     context.user_data.clear()
     update.message.reply_text("Your data has been reset.")
- 
+
 def init_db():
     conn = sqlite3.connect('carbon_footprint.db')
     c = conn.cursor()
@@ -250,18 +250,21 @@ def save_user_data(user_id, username, points, footprint):
 
     conn.commit()
     conn.close()
-
+   
 
 def main():
     init_db()
     start_handler = CommandHandler('start', start)
-    dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(start_handler)
     dispatcher.add_handler(CommandHandler('help', help))
     dispatcher.add_handler(CommandHandler('calculate', calculate))
-    dispatcher.add_handler(CommandHandler('statistics', statistics))
+    dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern='^(car|public_transport|bicycle|walking)$'), group=1)
+    dispatcher.add_handler(MessageHandler(Filters.text & (~Filters.command), get_distance_message), group=1)
+    dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern='^another$'), group=1)
+    dispatcher.add_handler(CallbackQueryHandler(statistics, pattern='^statistics$'), group=1)
     dispatcher.add_handler(CommandHandler('reset', reset))
-    dispatcher.add_handler(CommandHandler('leaderboard', leaderboard))  # Close the parentheses here
-    
+    dispatcher.add_handler(CommandHandler('leaderboard', leaderboard))
+
     # Start the bot
     updater.start_polling()
     logger.info("Carbon Footprint Calculator bot is running...")
@@ -276,4 +279,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         updater.stop()
         logger.info("\nCarbon Footprint Calculator bot has been stopped by user.")
-
