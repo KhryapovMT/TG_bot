@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-API_TOKEN = '6146264911:AAEUYFWgDYQNcjfYvk03kj0B2yTAJ__P890'
+API_TOKEN = '6157683300:AAGYWHBTEATMtxzcqASDPTT-rmAvLTtOP3A'
 
 EMISSION_FACTORS = {
     "car": 0.23,
