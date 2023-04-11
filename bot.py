@@ -176,7 +176,6 @@ dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))
 dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
 dispatcher.add_handler(CallbackQueryHandler(button_callback))
 dispatcher.add_handler(CommandHandler('start', start, pass_args=True))
-dispatcher.add_handler(CommandHandler('share_achievements', share_achievements))
 
 def update_achievements(user_data):
     achievements = user_data.get("achievements", [])
