@@ -367,6 +367,15 @@ def get_user_statistics(user_id, start_date, end_date):
     else:
         return 0, 0.0
       
+def get_user_achievements(user_id):
+    conn = sqlite3.connect('achievements_db.db')
+    c = conn.cursor()
+    c.execute("SELECT achievement FROM achievements WHERE user_id = ?", (user_id,))
+    rows = c.fetchall()
+    achievements = [row[0] for row in rows]
+    conn.close()
+    return achievements
+
 def create_progress_chart(weekly_data):
     # Create a bar chart using the provided data
     plt.bar(range(len(weekly_data)), weekly_data.values(), align='center')
@@ -407,6 +416,17 @@ def share_achievements(update: Update, context: CallbackContext):
 
     keyboard = InlineKeyboardMarkup([[share_button]])
     update.message.reply_text("Share your achievements:", reply_markup=keyboard)
+    user = update.effective_user
+    chat_id = update.effective_chat.id
+    text = "Here are the achievements for {0}:".format(user.first_name)
+    
+    achievements = get_user_achievements(user_id=user.id)
+    
+    if not achievements:
+        context.bot.send_message(chat_id=chat_id, text="You don't have any achievements yet.")
+    else:
+        achievements_text = "\n".join("- " + achievement for achievement in achievements)
+        context.bot.send_message(chat_id=chat_id, text=text + "\n" + achievements_text)
 
 dispatcher.add_handler(CommandHandler('share_achievements', share_achievements))
 
