@@ -293,12 +293,14 @@ def update_points(user_data, mode):
 def get_user_statistics(user_id, start_date, end_date):
     conn = sqlite3.connect('carbon_footprint.db')
     c = conn.cursor()
-    c.execute('''SELECT SUM(points), SUM(footprint) FROM daily_data WHERE user_id = ? AND date BETWEEN ? AND ?''', (user_id, start_date, end_date))
-    result = c.fetchone()
+    c.execute('''SELECT SUM(points), SUM(footprint) FROM users WHERE user_id = ? AND date BETWEEN ? AND ?''', (user_id, start_date, end_date))
+    data = c.fetchone()
     conn.close()
-    if result is None or result[0] is None or result[1] is None:
+
+    if data:
+        return data
+    else:
         return 0, 0
-    return result[0], result[1]
       
 def get_user_achievements(user_id):
     conn = sqlite3.connect('achievements_db.db')
