@@ -279,11 +279,11 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS achievements
                 (user_id INTEGER,
                  achievement TEXT,
+                 date DATE,
                  PRIMARY KEY (user_id, achievement),
                  FOREIGN KEY (user_id) REFERENCES users (user_id))''')
     conn.commit()
     conn.close()
-
 
 def update_points(user_data, mode):
     points = POINTS.get(mode, 0)
@@ -293,14 +293,12 @@ def update_points(user_data, mode):
 def get_user_statistics(user_id, start_date, end_date):
     conn = sqlite3.connect('carbon_footprint.db')
     c = conn.cursor()
-    c.execute('''SELECT points, footprint FROM users WHERE user_id = ? AND date BETWEEN ? AND ?''', (user_id, start_date, end_date))
+    c.execute('''SELECT SUM(points), SUM(footprint) FROM daily_data WHERE user_id = ? AND date BETWEEN ? AND ?''', (user_id, start_date, end_date))
     result = c.fetchone()
     conn.close()
-    if result:
-        points, footprint = result
-        return points, footprint
-    else:
-        return 0, 0.0
+    if result is None or result[0] is None or result[1] is None:
+        return 0, 0
+    return result[0], result[1]
       
 def get_user_achievements(user_id):
     conn = sqlite3.connect('achievements_db.db')
@@ -314,17 +312,9 @@ def get_user_achievements(user_id):
 def save_user_data(user_id, username, points, footprint):
     conn = sqlite3.connect('carbon_footprint.db')
     c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY,
-        username TEXT,
-        points INTEGER DEFAULT 0,
-        footprint REAL DEFAULT 0.0
-    )''')
-    conn.commit()
-    conn.close()
-    today = date.today()
+    today = datetime.date.today().isoformat()
     c.execute('''INSERT OR IGNORE INTO users (user_id, username, points, footprint, date) VALUES (?, ?, ?, ?, ?)''', (user_id, username, points, footprint, today))
-    c.execute('''UPDATE users SET points = points + ?, footprint = footprint + ?, date = ? WHERE user_id = ?''', (points, footprint, today, user_id))
+    c.execute('''INSERT OR REPLACE INTO users (user_id, username, points, footprint, date) VALUES (?, ?, ?, ?, ?)''', (user_id, username, points, footprint, today))
     conn.commit()
     conn.close()
   
