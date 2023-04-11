@@ -131,6 +131,33 @@ def get_distance_message(update, context):
 
     return "CHOOSE_ACTION"
 
+def button_callback(update: Update, context: CallbackContext):
+    query = update.callback_query
+    mode = query.data
+
+    if mode not in EMISSION_FACTORS:
+        query.answer("Invalid mode selected.")
+        return
+
+    query.answer()  # To acknowledge the button press
+
+    distance = random.uniform(1, 10)  # Replace this with your actual distance input method
+    emission = distance * EMISSION_FACTORS[mode]
+
+    context.user_data['footprint'] += emission
+    context.user_data['history'].append({
+        "mode": mode,
+        "distance": distance,
+        "emission": emission,
+        "date": datetime.date.today().isoformat()
+    })
+
+    store_transportation_data(update, context)
+
+    text = f"You have chosen {mode.capitalize()} for {distance:.2f} km. This results in {emission:.2f} kg CO2e emission."
+    query.edit_message_text(text)
+
+dispatcher.add_handler(CallbackQueryHandler(button_callback))
 
 def another_callback(update, context):
     query = update.callback_query
@@ -147,7 +174,6 @@ def another_callback(update, context):
     query.edit_message_text(text, reply_markup=reply_markup)
 
     return "CHOOSE_TRANSPORTATION_MODE"
-
 
 def update_achievements(user_data):
     achievements = user_data.get("achievements", [])
@@ -169,7 +195,6 @@ def update_achievements(user_data):
         return text
 
     return None
-
 
 def store_transportation_data(update, context):
     mode = context.user_data.get('mode')
