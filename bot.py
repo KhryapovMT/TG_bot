@@ -271,13 +271,19 @@ def init_db():
     for day in days:
         weekly_data[day] = []
     c.execute('''CREATE TABLE IF NOT EXISTS users
-            (user_id INTEGER PRIMARY KEY,
-             username TEXT,
-             points INTEGER,
-             footprint REAL,
-             date DATE)''')
+                (user_id INTEGER PRIMARY KEY,
+                 username TEXT,
+                 points INTEGER,
+                 footprint REAL,
+                 date DATE)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS achievements
+                (user_id INTEGER,
+                 achievement TEXT,
+                 PRIMARY KEY (user_id, achievement),
+                 FOREIGN KEY (user_id) REFERENCES users (user_id))''')
     conn.commit()
     conn.close()
+
 
 def update_points(user_data, mode):
     points = POINTS.get(mode, 0)
