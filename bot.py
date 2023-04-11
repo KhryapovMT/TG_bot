@@ -268,13 +268,13 @@ def init_db():
     conn = sqlite3.connect('carbon_footprint.db')
     c = conn.cursor()
         for day in days:
-        weekly_data[day] = []
-    c.execute('''CREATE TABLE IF NOT EXISTS users
-                (user_id INTEGER PRIMARY KEY,
-                 username TEXT,
-                 points INTEGER,
-                 footprint REAL,
-                 date DATE)''')
+            weekly_data[day] = []
+        c.execute('''CREATE TABLE IF NOT EXISTS users
+                    (user_id INTEGER PRIMARY KEY,
+                     username TEXT,
+                     points INTEGER,
+                     footprint REAL,
+                     date DATE)''')
     conn.commit()
     conn.close()
 
