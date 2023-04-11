@@ -93,16 +93,7 @@ def transportation_mode_callback(update, context):
 def statistics(update, context):
     text = "Your carbon footprint statistics will be displayed here."
     update.message.reply_text(text)
-  
-dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^another$"))
-dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))
-dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
-  
     
-def statistics(update, context):
-    text = format_statistics(context.user_data)
-    update.message.reply_text(text)
-
 def get_distance_message(update, context):
     try:
         distance = float(update.message.text)
@@ -176,6 +167,7 @@ def another_callback(update, context):
 
 dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^(car|public_transport|bicycle|walking)$"))
 dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))  
+dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
 dispatcher.add_handler(CallbackQueryHandler(button_callback))
 
 def update_achievements(user_data):
