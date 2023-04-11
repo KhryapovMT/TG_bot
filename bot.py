@@ -90,6 +90,10 @@ def transportation_mode_callback(update, context):
 
     return "GET_DISTANCE"
 
+def statistics(update, context):
+    text = "Your carbon footprint statistics will be displayed here."
+    update.message.reply_text(text)
+  
 dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^another$"))
 dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))
 dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
