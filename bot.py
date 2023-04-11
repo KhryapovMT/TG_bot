@@ -398,7 +398,7 @@ def send_weekly_update(user, progress_data):
     # Send the message and the chart to the user
     send_message(user, message, image=progress_chart)
       
-def share_achievements(update, context):
+def share_achievements(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
     achievement = "Some achievement data"
 
@@ -407,6 +407,8 @@ def share_achievements(update, context):
 
     keyboard = InlineKeyboardMarkup([[share_button]])
     update.message.reply_text("Share your achievements:", reply_markup=keyboard)
+
+dispatcher.add_handler(CommandHandler('share_achievements', share_achievements))
 
 def main():
     # Start the bot
