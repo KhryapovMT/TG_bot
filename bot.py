@@ -211,7 +211,6 @@ def store_transportation_data(update, context):
     username = update.message.from_user.username
     points = context.user_data['points']
     footprint = context.user_data['footprint']
-    save_user_data(user_id, username, points, footprint)
     emission = emission_factor * distance
     context.user_data['footprint'] = context.user_data.get('footprint', 0) + emission
     context.user_data['history'].append({
@@ -220,6 +219,7 @@ def store_transportation_data(update, context):
         "distance": distance,
         "emission": emission
     })
+    save_user_data(user_id, username, points, footprint)  # Move this line after updating user_data
     badge_message = update_achievements(context.user_data)
     if badge_message:
         update.message.reply_text(badge_message)
@@ -261,23 +261,6 @@ def reset(update: Update, context: CallbackContext):
 
 reset_handler = CommandHandler('reset', reset)
 dispatcher.add_handler(reset_handler)
-
-def save_user_data(user_id, username, points, footprint):
-    conn = sqlite3.connect('carbon_footprint.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
-        user_id INTEGER PRIMARY KEY,
-        username TEXT,
-        points INTEGER DEFAULT 0,
-        footprint REAL DEFAULT 0.0
-    )''')
-    conn.commit()
-    conn.close()
-    today = date.today()
-    c.execute('''INSERT OR IGNORE INTO users (user_id, username, points, footprint, date) VALUES (?, ?, ?, ?, ?)''', (user_id, username, points, footprint, today))
-    c.execute('''UPDATE users SET points = points + ?, footprint = footprint + ?, date = ? WHERE user_id = ?''', (points, footprint, today, user_id))
-    conn.commit()
-    conn.close()
 
 def init_db():
     global weekly_data
@@ -321,6 +304,23 @@ def get_user_achievements(user_id):
     conn.close()
     return achievements
 
+def save_user_data(user_id, username, points, footprint):
+    conn = sqlite3.connect('carbon_footprint.db')
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users (
+        user_id INTEGER PRIMARY KEY,
+        username TEXT,
+        points INTEGER DEFAULT 0,
+        footprint REAL DEFAULT 0.0
+    )''')
+    conn.commit()
+    conn.close()
+    today = date.today()
+    c.execute('''INSERT OR IGNORE INTO users (user_id, username, points, footprint, date) VALUES (?, ?, ?, ?, ?)''', (user_id, username, points, footprint, today))
+    c.execute('''UPDATE users SET points = points + ?, footprint = footprint + ?, date = ? WHERE user_id = ?''', (points, footprint, today, user_id))
+    conn.commit()
+    conn.close()
+  
 def create_progress_chart(weekly_data):
     plt.bar(range(len(weekly_data)), weekly_data.values(), align='center')
     plt.xticks(range(len(weekly_data)), list(weekly_data.keys()))
