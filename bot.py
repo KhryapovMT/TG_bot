@@ -157,6 +157,26 @@ def button_callback(update: Update, context: CallbackContext):
     text = f"You have chosen {mode.capitalize()} for {distance:.2f} km. This results in {emission:.2f} kg CO2e emission."
     query.edit_message_text(text)
 
+def another_callback(update, context):
+    query = update.callback_query
+    query.answer()
+
+    text = "Please select another mode of transportation:"
+    keyboard = [
+        [InlineKeyboardButton("Car 🚗", callback_data="car"),
+         InlineKeyboardButton("Public Transport 🚌", callback_data="public_transport"),
+         InlineKeyboardButton("Bicycle 🚲", callback_data="bicycle"),
+         InlineKeyboardButton("Walking 🚶‍♂️", callback_data="walking")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    query.edit_message_text(text, reply_markup=reply_markup)
+
+    return "CHOOSE_TRANSPORTATION_MODE"
+
+dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^(car|public_transport|bicycle|walking)$"))
+dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
+dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))  
+    
 dispatcher.add_handler(CallbackQueryHandler(button_callback))
 
 def another_callback(update, context):
@@ -252,7 +272,15 @@ def format_leaderboard(leaderboard_data):
     for rank, (username, points, footprint) in enumerate(leaderboard_data, start=1):
         text += f"{rank}. {username} - {points} points, {footprint:.2f} kg CO2e\n"
     return text
-  
+ 
+def leaderboard(update, context):
+    leaderboard_data = get_leaderboard_data()
+    text = format_leaderboard(leaderboard_data)
+    update.message.reply_text(text)
+
+leaderboard_handler = CommandHandler('leaderboard', leaderboard)
+dispatcher.add_handler(leaderboard_handler)
+
 def reset(update: Update, context: CallbackContext):
     user_data = context.user_data
     user_data.clear()
