@@ -48,6 +48,8 @@ commands_text = """Here are the available commands:
 /calculate - Calculate carbon footprint for a mode of transportation
 /statistics - Show your carbon footprint statistics
 /leaderboard - Show the leaderboard
+/share_achievements - To share your current achievements
+/send_weekly_updates - To see your current carbon footprint
 /reset - Reset your data
 """
 
@@ -269,11 +271,11 @@ def init_db():
     for day in days:
         weekly_data[day] = []
     c.execute('''CREATE TABLE IF NOT EXISTS users
-                (user_id INTEGER PRIMARY KEY,
-                 username TEXT,
-                 points INTEGER,
-                 footprint REAL,
-                 date DATE)''')
+            (user_id INTEGER PRIMARY KEY,
+             username TEXT,
+             points INTEGER,
+             footprint REAL,
+             date DATE)''')
     conn.commit()
     conn.close()
 
