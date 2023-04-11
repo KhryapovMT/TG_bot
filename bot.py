@@ -49,7 +49,7 @@ commands_text = """Here are the available commands:
 /statistics - Show your carbon footprint statistics
 /leaderboard - Show the leaderboard
 /share_achievements - To share your current achievements
-/send_weekly_updates - To see your current carbon footprint
+/send_weekly_update - To see your current carbon footprint
 /reset - Reset your data
 """
 
