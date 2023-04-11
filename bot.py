@@ -62,9 +62,6 @@ def help(update, context):
 start_handler = CommandHandler('start', start)
 dispatcher.add_handler(start_handler)
 
-updater.start_polling()
-updater.idle()
-
 def calculate(update, context):
     text = "Please select a mode of transportation:"
     keyboard = [
@@ -93,9 +90,9 @@ def transportation_mode_callback(update, context):
 
     return "GET_DISTANCE"
 
-dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^(car|public_transport|bicycle|walking)$"))
-dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
+dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^another$"))
 dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))
+dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
   
     
 def statistics(update, context):
@@ -174,26 +171,8 @@ def another_callback(update, context):
     return "CHOOSE_TRANSPORTATION_MODE"
 
 dispatcher.add_handler(CallbackQueryHandler(transportation_mode_callback, pattern="^(car|public_transport|bicycle|walking)$"))
-dispatcher.add_handler(CallbackQueryHandler(another_callback, pattern="^another$"))
 dispatcher.add_handler(CallbackQueryHandler(statistics, pattern="^statistics$"))  
-    
 dispatcher.add_handler(CallbackQueryHandler(button_callback))
-
-def another_callback(update, context):
-    query = update.callback_query
-    query.answer()
-
-    text = "Please select another mode of transportation:"
-    keyboard = [
-        [InlineKeyboardButton("Car 🚗", callback_data="car"),
-         InlineKeyboardButton("Public Transport 🚌", callback_data="public_transport"),
-         InlineKeyboardButton("Bicycle 🚲", callback_data="bicycle"),
-         InlineKeyboardButton("Walking 🚶‍♂️", callback_data="walking")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    query.edit_message_text(text, reply_markup=reply_markup)
-
-    return "CHOOSE_TRANSPORTATION_MODE"
 
 def update_achievements(user_data):
     achievements = user_data.get("achievements", [])
